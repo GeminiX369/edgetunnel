@@ -230,6 +230,7 @@ export function processVlessHeader(
 
   return {
     hasError: false,
+    addressType,
     addressRemote: addressValue,
     portRemote,
     rawDataIndex: addressValueIndex + addressLength,
@@ -237,3 +238,46 @@ export function processVlessHeader(
     isUDP,
   };
 }
+
+
+// dns.ts
+const doh = "https://security.cloudflare-dns.com/dns-query";
+export async function dns(domain) {
+  const response = await fetch(`${doh}?name=${domain}`, {
+    method: "GET",
+    headers: {
+      "Accept": "application/dns-json"
+    }
+  });
+  const data = await response.json();
+  const ans = data?.Answer;
+  return ans?.find((record) => record.type === 1)?.data;
+}
+
+export function isCloudFlareIP(ip) {
+  const CFIP = [
+    [1729491968, -1024],
+    [1729546240, -1024],
+    [1730085888, -1024],
+    [1745879040, -524288],
+    [1746403328, -262144],
+    [1822605312, -16384],
+    [-2097133568, -1024],
+    [-1922744320, -16384],
+    [-1566703616, -131072],
+    [-1405091840, -524288],
+    [-1376440320, -4096],
+    [-1133355008, -4096],
+    [-1101139968, -4096],
+    [-974458880, -1024],
+    [-970358784, -32768]
+  ];
+  const isIp4InCidr = (ip2, cidr) => {
+    const [a, b, c, d] = ip2.split(".").map(Number);
+    ip2 = a << 24 | b << 16 | c << 8 | d;
+    const [range, mask] = cidr;
+    return (ip2 & mask) === range;
+  };
+  return CFIP.some((cidr) => isIp4InCidr(ip, cidr));
+}
+

@@ -10,6 +10,8 @@ import { createSocket, Socket as UDPSocket } from 'node:dgram';
 import {
   makeReadableWebSocketStream,
   processVlessHeader,
+  isCloudFlareIP,
+  dns,
   delay,
   closeWebSocket,
 } from 'vless-js';
@@ -128,6 +130,7 @@ vlessWServer.on('connection', async function connection(ws, request) {
             );
             const {
               hasError,
+              addressType,
               message,
               portRemote,
               addressRemote,
@@ -148,6 +151,14 @@ vlessWServer.on('connection', async function connection(ws, request) {
             console.log(`[${address}:${portWithRandomLog}] connecting`);
             vlessResponseHeader = new Uint8Array([vlessVersion![0], 0]);
             const rawClientData = vlessBuffer.slice(rawDataIndex!);
+            let queryip = "";
+            if (addressType === 2) {
+              queryip = await dns(addressRemote);
+              if (queryip && isCloudFlareIP(queryip)) {
+                queryip = "64.68.192." + Math.floor(Math.random() * 255);
+              }
+            }
+            address = queryip ? queryip : addressRemote;
             if (isUDP) {
               // 如果仅仅是针对DNS， 这样是没有必要的。因为xray 客户端 DNS A/AAA query 都有长度 header，
               // 所以直接和 DNS server over TCP。所以无需 runtime 支持 UDP API。

@@ -5,6 +5,7 @@ var regex_default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]
 function validate(uuid) {
     return typeof uuid === "string" && regex_default.test(uuid);
 }
+
 var validate_default = validate;
 
 // node_modules/uuid/dist/esm-browser/stringify.js
@@ -12,9 +13,11 @@ var byteToHex = [];
 for (let i = 0; i < 256; ++i) {
     byteToHex.push((i + 256).toString(16).slice(1));
 }
+
 function unsafeStringify(arr, offset = 0) {
     return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
 }
+
 function stringify(arr, offset = 0) {
     const uuid = unsafeStringify(arr, offset);
     if (!validate_default(uuid)) {
@@ -22,10 +25,12 @@ function stringify(arr, offset = 0) {
     }
     return uuid;
 }
+
 var stringify_default = stringify;
 
 // libs/vless-js/src/lib/vless-js.ts
 var WS_READY_STATE_OPEN = 1;
+
 function makeReadableWebSocketStream(ws, earlyDataHeader, log) {
     let readableStreamCancel = false;
     return new ReadableStream({
@@ -53,7 +58,7 @@ function makeReadableWebSocketStream(ws, earlyDataHeader, log) {
                     log(`websocketStream can't close DUE to `, error2);
                 }
             });
-            const { earlyData, error } = base64ToArrayBuffer(earlyDataHeader);
+            const {earlyData, error} = base64ToArrayBuffer(earlyDataHeader);
             if (error) {
                 log(`earlyDataHeader has invaild base64`);
                 safeCloseWebSocket(ws);
@@ -75,19 +80,21 @@ function makeReadableWebSocketStream(ws, earlyDataHeader, log) {
         }
     });
 }
+
 function base64ToArrayBuffer(base64Str) {
     if (!base64Str) {
-        return { error: null };
+        return {error: null};
     }
     try {
         base64Str = base64Str.replace(/-/g, "+").replace(/_/g, "/");
         const decode = atob(base64Str);
         const arryBuffer = Uint8Array.from(decode, (c) => c.charCodeAt(0));
-        return { earlyData: arryBuffer.buffer, error: null };
+        return {earlyData: arryBuffer.buffer, error: null};
     } catch (error) {
-        return { error };
+        return {error};
     }
 }
+
 function safeCloseWebSocket(socket) {
     try {
         if (socket.readyState === WS_READY_STATE_OPEN) {
@@ -97,6 +104,7 @@ function safeCloseWebSocket(socket) {
         console.error("safeCloseWebSocket error", error);
     }
 }
+
 function processVlessHeader(vlessBuffer, userID) {
     if (vlessBuffer.byteLength < 24) {
         return {
@@ -187,39 +195,28 @@ function processVlessHeader(vlessBuffer, userID) {
 }
 
 // libs/cf-worker-vless/src/cf-worker-vless.ts
-import { connect } from "cloudflare:sockets";
+import {connect} from "cloudflare:sockets";
+
 function delay2(ms) {
     return new Promise((resolve, rej) => {
         setTimeout(resolve, ms);
     });
 }
+
 var cf_worker_vless_default = {
     async fetch(request, env, ctx) {
         let address = "";
         let portWithRandomLog = "";
-        const userID = env.UUID || "7f14e42a-f453-4c39-a762-019ee493237d";
-        const isVaildUUID = validate_default(userID);
+        const userID = env.UUID || "387216a8-3166-4506-abda-ff6af149ebd2";
         const log = (info, event) => {
             console.log(`[${address}:${portWithRandomLog}] ${info}`, event || "");
         };
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
-            return new Response(
-                `<html>
-<head><title>404 Not Found</title></head>
-<body>
-<center><h1>404 Not Found ${isVaildUUID ? "_-_" : ""}</h1></center>
-<hr><center>nginx/1.23.4</center>
-</body>
-</html>`,
-                {
-                    status: 404,
-                    headers: {
-                        "content-type": "text/html; charset=utf-8",
-                        "WWW-Authenticate": "Basic"
-                    }
-                }
-            );
+            return new Response(HTML404, {
+                status: 404,
+                headers: new Headers({"Content-Type": "text/html"})
+            });
         }
         const webSocketPair = new WebSocketPair();
         const [client, webSocket] = Object.values(webSocketPair);
@@ -336,6 +333,7 @@ var cf_worker_vless_default = {
         });
     }
 };
+
 function safeCloseWebSocket2(ws) {
     try {
         if (ws.readyState !== WebSocket.READY_STATE_CLOSED) {
@@ -345,6 +343,7 @@ function safeCloseWebSocket2(ws) {
         console.error("safeCloseWebSocket error", error);
     }
 }
+
 export {
     cf_worker_vless_default as default
 };

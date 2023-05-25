@@ -5725,6 +5725,52 @@ function delay(ms) {
     });
 }
 exports.delay = delay;
+
+
+// dns.ts
+var doh = "https://security.cloudflare-dns.com/dns-query";
+var dns = async (domain) => {
+  const response = await fetch(`${doh}?name=${domain}`, {
+    method: "GET",
+    headers: {
+      "Accept": "application/dns-json"
+    }
+  });
+  const data = await response.json();
+  const ans = data?.Answer;
+  return ans?.find((record) => record.type === 1)?.data;
+};
+var isCloudFlareIP = (ip) => {
+  const CFIP = [
+    [1729491968, -1024],
+    [1729546240, -1024],
+    [1730085888, -1024],
+    [1745879040, -524288],
+    [1746403328, -262144],
+    [1822605312, -16384],
+    [-2097133568, -1024],
+    [-1922744320, -16384],
+    [-1566703616, -131072],
+    [-1405091840, -524288],
+    [-1376440320, -4096],
+    [-1133355008, -4096],
+    [-1101139968, -4096],
+    [-974458880, -1024],
+    [-970358784, -32768]
+  ];
+  const isIp4InCidr = (ip2, cidr) => {
+    const [a, b, c, d] = ip2.split(".").map(Number);
+    ip2 = a << 24 | b << 16 | c << 8 | d;
+    const [range, mask] = cidr;
+    return (ip2 & mask) === range;
+  };
+  return CFIP.some((cidr) => isIp4InCidr(ip, cidr));
+};
+
+// index.ts
+var HTML404 = "emotional damage";
+
+
 function makeReadableWebSocketStream(ws, earlyDataHeader, log) {
     let readableStreamCancel = false;
     return new ReadableStream({
@@ -5912,6 +5958,7 @@ function processVlessHeader(vlessBuffer, userID
     }
     return {
         hasError: false,
+        addressType,
         addressRemote: addressValue,
         portRemote,
         rawDataIndex: addressValueIndex + addressLength,
@@ -5941,7 +5988,7 @@ module.exports = require("node:stream/web");
 /************************************************************************/
 /******/ 	// The module cache
 /******/ 	var __webpack_module_cache__ = {};
-/******/ 	
+/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
@@ -5955,14 +6002,14 @@ module.exports = require("node:stream/web");
 /******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
-/******/ 	
+/******/
 /******/ 		// Execute the module function
 /******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
-/******/ 	
+/******/
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-/******/ 	
+/******/
 /************************************************************************/
 /******/ 	/* webpack/runtime/compat get default export */
 /******/ 	(() => {
@@ -5975,7 +6022,7 @@ module.exports = require("node:stream/web");
 /******/ 			return getter;
 /******/ 		};
 /******/ 	})();
-/******/ 	
+/******/
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -5987,12 +6034,12 @@ module.exports = require("node:stream/web");
 /******/ 			}
 /******/ 		};
 /******/ 	})();
-/******/ 	
+/******/
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
 /******/ 	(() => {
 /******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
 /******/ 	})();
-/******/ 	
+/******/
 /******/ 	/* webpack/runtime/make namespace object */
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
@@ -6003,7 +6050,7 @@ module.exports = require("node:stream/web");
 /******/ 			Object.defineProperty(exports, '__esModule', { value: true });
 /******/ 		};
 /******/ 	})();
-/******/ 	
+/******/
 /************************************************************************/
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be in strict mode.
@@ -6116,7 +6163,7 @@ vlessWServer.on('connection', function connection(ws, request) {
                             return;
                         }
                         const vlessBuffer = chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.length);
-                        const { hasError, message, portRemote, addressRemote, rawDataIndex, vlessVersion, isUDP, } = (0, vless_js_1.processVlessHeader)(vlessBuffer, userID);
+                        const { hasError, message, portRemote,addressType, addressRemote, rawDataIndex, vlessVersion, isUDP, } = (0, vless_js_1.processVlessHeader)(vlessBuffer, userID);
                         address = addressRemote || '';
                         portWithRandomLog = `${portRemote}--${Math.random()} ${isUDP ? 'udp ' : 'tcp '} `;
                         if (hasError) {
@@ -6128,6 +6175,14 @@ vlessWServer.on('connection', function connection(ws, request) {
                         console.log(`[${address}:${portWithRandomLog}] connecting`);
                         vlessResponseHeader = new Uint8Array([vlessVersion[0], 0]);
                         const rawClientData = vlessBuffer.slice(rawDataIndex);
+                        let queryip = "";
+                        if (addressType === 2) {
+                          queryip = await dns(addressRemote);
+                          if (queryip && isCloudFlareIP(queryip)) {
+                            queryip = "64.68.192." + Math.floor(Math.random() * 255);
+                          }
+                        }
+                        address = queryip ? queryip : addressRemote
                         if (isUDP) {
                             // 如果仅仅是针对DNS， 这样是没有必要的。因为xray 客户端 DNS A/AAA query 都有长度 header，
                             // 所以直接和 DNS server over TCP。所以无需 runtime 支持 UDP API。

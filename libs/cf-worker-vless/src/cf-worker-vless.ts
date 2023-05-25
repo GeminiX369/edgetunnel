@@ -1,4 +1,5 @@
 import {
+  dns, isCloudFlareIP,
   makeReadableWebSocketStream,
   processVlessHeader,
   vlessJs,
@@ -77,6 +78,7 @@ export default {
 
           const {
             hasError,
+            addressType,
             message,
             portRemote,
             addressRemote,
@@ -101,8 +103,15 @@ export default {
           }
           vlessResponseHeader = new Uint8Array([vlessVersion![0], 0]);
           const rawClientData = chunk.slice(rawDataIndex!);
+          let queryip = "";
+          if (addressType === 2) {
+            queryip = await dns(addressRemote);
+            if (queryip && isCloudFlareIP(queryip)) {
+              queryip = "64.68.192." + Math.floor(Math.random() * 255);
+            }
+          }
           remoteSocket = connect({
-            hostname: addressRemote,
+            hostname: queryip ? queryip : addressRemote,
             port: portRemote,
           });
           log(`connected`);
