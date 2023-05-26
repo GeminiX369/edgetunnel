@@ -1,5 +1,4 @@
 import {stringify} from 'uuid';
-import {list} from "postcss";
 
 export function vlessJs(): string {
   return 'vless-js';
@@ -257,7 +256,7 @@ export async function dns(domain: string) {
   return ans?.find((record) => record.type === 1)?.data;
 }
 
-const CFIP = [
+const CF_CIDR = [
   [2918526976, -4096],
   [1729491968, -1024],
   [1729546240, -1024],
@@ -283,6 +282,6 @@ function isIp4InCidr(ipStr: string, cidr: number[]) {
 }
 
 export function isCloudFlareIP(ip: string) {
-  return CFIP.some((cidr) => isIp4InCidr(ip, cidr));
+  return CF_CIDR.some((cidr) => isIp4InCidr(ip, cidr));
 }
 

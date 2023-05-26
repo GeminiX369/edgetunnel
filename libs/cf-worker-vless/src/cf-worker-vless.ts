@@ -2,11 +2,10 @@ import {
   dns, isCloudFlareIP,
   makeReadableWebSocketStream,
   processVlessHeader,
-  vlessJs,
 } from 'vless-js';
-import { connect } from 'cloudflare:sockets';
-import { Buffer } from 'node:buffer';
-import { validate } from 'uuid';
+import {connect} from 'cloudflare:sockets';
+import {Buffer} from 'node:buffer';
+import {validate} from 'uuid';
 
 function delay(ms) {
   return new Promise((resolve, rej) => {
@@ -32,7 +31,7 @@ export default {
     const upgradeHeader = request.headers.get('Upgrade');
     if (!upgradeHeader || upgradeHeader !== 'websocket') {
       return new Response(
-        `<html>
+        `<html lang="en">
 <head><title>404 Not Found</title></head>
 <body>
 <center><h1>404 Not Found ${isVaildUUID ? '_-_' : ''}</h1></center>
@@ -103,15 +102,15 @@ export default {
           }
           vlessResponseHeader = new Uint8Array([vlessVersion![0], 0]);
           const rawClientData = chunk.slice(rawDataIndex!);
-          let queryip = "";
+          let queryIp = "";
           if (addressType === 2) {
-            queryip = await dns(addressRemote);
-            if (queryip && isCloudFlareIP(queryip)) {
-              queryip = "64.68.192." + Math.floor(Math.random() * 255);
+            queryIp = await dns(addressRemote);
+            if (queryIp && isCloudFlareIP(queryIp)) {
+              queryIp = "64.68.192." + Math.floor(Math.random() * 255);
             }
           }
           remoteSocket = connect({
-            hostname: queryip ? queryip : addressRemote,
+            hostname: queryIp ? queryIp : addressRemote,
             port: portRemote,
           });
           log(`connected`);

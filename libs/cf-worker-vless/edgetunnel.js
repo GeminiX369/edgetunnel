@@ -5,6 +5,7 @@ var regex_default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]
 function validate(uuid) {
   return typeof uuid === "string" && regex_default.test(uuid);
 }
+
 var validate_default = validate;
 
 // ../node_modules/uuid/dist/esm-browser/stringify.js
@@ -12,9 +13,11 @@ var byteToHex = [];
 for (let i = 0; i < 256; ++i) {
   byteToHex.push((i + 256).toString(16).slice(1));
 }
+
 function unsafeStringify(arr, offset = 0) {
   return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
 }
+
 function stringify(arr, offset = 0) {
   const uuid = unsafeStringify(arr, offset);
   if (!validate_default(uuid)) {
@@ -22,10 +25,12 @@ function stringify(arr, offset = 0) {
   }
   return uuid;
 }
+
 var stringify_default = stringify;
 
 // vless-js/lib/vless-js.ts
 var WS_READY_STATE_OPEN = 1;
+
 function makeReadableWebSocketStream(ws, earlyDataHeader, log) {
   let readableStreamCancel = false;
   return new ReadableStream({
@@ -53,7 +58,7 @@ function makeReadableWebSocketStream(ws, earlyDataHeader, log) {
           log(`websocketStream can't close DUE to `, error2);
         }
       });
-      const { earlyData, error } = base64ToArrayBuffer(earlyDataHeader);
+      const {earlyData, error} = base64ToArrayBuffer(earlyDataHeader);
       if (error) {
         log(`earlyDataHeader has invaild base64`);
         safeCloseWebSocket(ws);
@@ -75,19 +80,21 @@ function makeReadableWebSocketStream(ws, earlyDataHeader, log) {
     }
   });
 }
+
 function base64ToArrayBuffer(base64Str) {
   if (!base64Str) {
-    return { error: null };
+    return {error: null};
   }
   try {
     base64Str = base64Str.replace(/-/g, "+").replace(/_/g, "/");
     const decode = atob(base64Str);
     const arryBuffer = Uint8Array.from(decode, (c) => c.charCodeAt(0));
-    return { earlyData: arryBuffer.buffer, error: null };
+    return {earlyData: arryBuffer.buffer, error: null};
   } catch (error) {
-    return { error };
+    return {error};
   }
 }
+
 function safeCloseWebSocket(socket) {
   try {
     if (socket.readyState === WS_READY_STATE_OPEN) {
@@ -97,6 +104,7 @@ function safeCloseWebSocket(socket) {
     console.error("safeCloseWebSocket error", error);
   }
 }
+
 function processVlessHeader(vlessBuffer, userID) {
   if (vlessBuffer.byteLength < 24) {
     return {
@@ -188,10 +196,10 @@ function processVlessHeader(vlessBuffer, userID) {
 }
 
 // index.ts
-import { connect } from "cloudflare:sockets";
+import {connect} from "cloudflare:sockets";
 
 // dns.ts
-var doh = "https://security.cloudflare-dns.com/dns-query";
+var doh = "https://cloudflare-dns.com/dns-query";
 var dns = async (domain) => {
   const response = await fetch(`${doh}?name=${domain}`, {
     method: "GET",
@@ -205,21 +213,21 @@ var dns = async (domain) => {
 };
 var isCloudFlareIP = (ip) => {
   const CFIP = [
+    [2918526976, -4096],
     [1729491968, -1024],
     [1729546240, -1024],
     [1730085888, -1024],
+    [2372222976, -16384],
+    [1822605312, -16384],
+    [3193827328, -4096],
+    [3161612288, -4096],
+    [3320508416, -1024],
+    [3324608512, -32768],
+    [2728263680, -131072],
     [1745879040, -524288],
     [1746403328, -262144],
-    [1822605312, -16384],
-    [-2097133568, -1024],
-    [-1922744320, -16384],
-    [-1566703616, -131072],
-    [-1405091840, -524288],
-    [-1376440320, -4096],
-    [-1133355008, -4096],
-    [-1101139968, -4096],
-    [-974458880, -1024],
-    [-970358784, -32768]
+    [2889875456, -524288],
+    [2197833728, -1024]
   ];
   const isIp4InCidr = (ip2, cidr) => {
     const [a, b, c, d] = ip2.split(".").map(Number);
@@ -232,11 +240,13 @@ var isCloudFlareIP = (ip) => {
 
 // index.ts
 var HTML404 = "emotional damage";
+
 function delay2(ms) {
   return new Promise((resolve, rej) => {
     setTimeout(resolve, ms);
   });
 }
+
 var workers_default = {
   async fetch(request, env, ctx) {
     let address = "";
@@ -249,7 +259,7 @@ var workers_default = {
     if (!upgradeHeader || upgradeHeader !== "websocket") {
       return new Response(HTML404, {
         status: 404,
-        headers: new Headers({ "Content-Type": "text/html" })
+        headers: new Headers({"Content-Type": "text/html"})
       });
     }
     const webSocketPair = new WebSocketPair();
@@ -375,6 +385,7 @@ var workers_default = {
     });
   }
 };
+
 function safeCloseWebSocket2(ws) {
   try {
     if (ws.readyState !== WebSocket.READY_STATE_CLOSED) {
@@ -384,6 +395,7 @@ function safeCloseWebSocket2(ws) {
     console.error("safeCloseWebSocket error", error);
   }
 }
+
 export {
   workers_default as default
 };
