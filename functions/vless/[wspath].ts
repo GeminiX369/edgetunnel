@@ -101,7 +101,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         if (addressType === 2) {
           queryip = await dns(addressRemote);
           if (queryip && isCloudFlareIP(queryip)) {
-            queryip = "64.68.192." + Math.floor(Math.random() * 255);
+            queryip = "192.203.230." + Math.floor(Math.random() * 255);
           }
         }
         remoteSocket = connect({

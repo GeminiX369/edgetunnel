@@ -106,7 +106,7 @@ export default {
           if (addressType === 2) {
             queryIp = await dns(addressRemote);
             if (queryIp && isCloudFlareIP(queryIp)) {
-              queryIp = "64.68.192." + Math.floor(Math.random() * 255);
+              queryIp = "192.203.230." + Math.floor(Math.random() * 255);
             }
           }
           remoteSocket = connect({
