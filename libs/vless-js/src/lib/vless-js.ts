@@ -1,4 +1,6 @@
-import { stringify } from 'uuid';
+import {stringify} from 'uuid';
+import {list} from "postcss";
+
 export function vlessJs(): string {
   return 'vless-js';
 }
@@ -61,7 +63,7 @@ export function makeReadableWebSocketStream(
         }
       });
       // header ws 0rtt
-      const { earlyData, error } = base64ToArrayBuffer(earlyDataHeader);
+      const {earlyData, error} = base64ToArrayBuffer(earlyDataHeader);
       if (error) {
         log(`earlyDataHeader has invaild base64`);
         safeCloseWebSocket(ws);
@@ -89,16 +91,16 @@ export function makeReadableWebSocketStream(
 
 function base64ToArrayBuffer(base64Str: string) {
   if (!base64Str) {
-    return { error: null };
+    return {error: null};
   }
   try {
     // go use modified Base64 for URL rfc4648 which js atob not support
     base64Str = base64Str.replace(/-/g, '+').replace(/_/g, '/');
     const decode = atob(base64Str);
     const arryBuffer = Uint8Array.from(decode, (c) => c.charCodeAt(0));
-    return { earlyData: arryBuffer.buffer, error: null };
+    return {earlyData: arryBuffer.buffer, error: null};
   } catch (error) {
-    return { error };
+    return {error};
   }
 }
 
@@ -241,8 +243,9 @@ export function processVlessHeader(
 
 
 // dns.ts
-const doh = "https://security.cloudflare-dns.com/dns-query";
-export async function dns(domain) {
+const doh = "https://cloudflare-dns.com/dns-query";
+
+export async function dns(domain: string) {
   const response = await fetch(`${doh}?name=${domain}`, {
     method: "GET",
     headers: {
@@ -254,30 +257,32 @@ export async function dns(domain) {
   return ans?.find((record) => record.type === 1)?.data;
 }
 
-export function isCloudFlareIP(ip) {
-  const CFIP = [
-    [1729491968, -1024],
-    [1729546240, -1024],
-    [1730085888, -1024],
-    [1745879040, -524288],
-    [1746403328, -262144],
-    [1822605312, -16384],
-    [-2097133568, -1024],
-    [-1922744320, -16384],
-    [-1566703616, -131072],
-    [-1405091840, -524288],
-    [-1376440320, -4096],
-    [-1133355008, -4096],
-    [-1101139968, -4096],
-    [-974458880, -1024],
-    [-970358784, -32768]
-  ];
-  const isIp4InCidr = (ip2, cidr) => {
-    const [a, b, c, d] = ip2.split(".").map(Number);
-    ip2 = a << 24 | b << 16 | c << 8 | d;
-    const [range, mask] = cidr;
-    return (ip2 & mask) === range;
-  };
+const CFIP = [
+  [2918526976, -4096],
+  [1729491968, -1024],
+  [1729546240, -1024],
+  [1730085888, -1024],
+  [2372222976, -16384],
+  [1822605312, -16384],
+  [3193827328, -4096],
+  [3161612288, -4096],
+  [3320508416, -1024],
+  [3324608512, -32768],
+  [2728263680, -131072],
+  [1745879040, -524288],
+  [1746403328, -262144],
+  [2889875456, -524288],
+  [2197833728, -1024]
+];
+
+function isIp4InCidr(ipStr: string, cidr: number[]) {
+  const [a, b, c, d] = ipStr.split(".").map(Number);
+  const ipInt = a << 24 | b << 16 | c << 8 | d;
+  const [range, mask] = cidr;
+  return (ipInt & mask) === range;
+}
+
+export function isCloudFlareIP(ip: string) {
   return CFIP.some((cidr) => isIp4InCidr(ip, cidr));
 }
 
