@@ -1,11 +1,5 @@
-import {
-  dns, isCloudFlareIP,
-  makeReadableWebSocketStream,
-  processVlessHeader,
-  vlessJs,
-} from 'vless-js';
-import { connect } from 'cloudflare:sockets';
-import { page404 } from '../util';
+import { cfDnsWrap, makeReadableWebSocketStream, processVlessHeader } from "vless-js";
+import { connect } from "cloudflare:sockets";
 
 interface Env {
   KV: KVNamespace;
@@ -13,32 +7,32 @@ interface Env {
 }
 
 export const onRequest: PagesFunction<Env> = async (context) => {
-  const userID = context.env['UUID'];
+  const userID = context.env["UUID"];
   if (context.params.wspath !== userID) {
     return new Response(``, {
       status: 401,
       headers: {
-        'content-type': 'text/html; charset=utf-8',
-        'WWW-Authenticate': 'Basic',
-      },
+        "content-type": "text/html; charset=utf-8",
+        "WWW-Authenticate": "Basic"
+      }
     });
   }
   console.log(context.params.wspath);
-  let address = '';
-  let portWithRandomLog = '';
+  let address = "";
+  let portWithRandomLog = "";
 
   const log = (info: string, event?: any) => {
-    console.log(`[${address}:${portWithRandomLog}] ${info}`, event || '');
+    console.log(`[${address}:${portWithRandomLog}] ${info}`, event || "");
   };
 
-  const upgradeHeader = context.request.headers.get('Upgrade');
+  const upgradeHeader = context.request.headers.get("Upgrade");
   // index page
-  if (!upgradeHeader || upgradeHeader !== 'websocket') {
+  if (!upgradeHeader || upgradeHeader !== "websocket") {
     return new Response(`need Upgrade to ws`, {
       status: 200,
       headers: {
-        'content-type': 'text/html; charset=utf-8',
-      },
+        "content-type": "text/html; charset=utf-8"
+      }
     });
   }
 
@@ -46,7 +40,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   const [client, webSocket] = Object.values(webSocketPair);
 
   const earlyDataHeader =
-    context.request.headers.get('sec-websocket-protocol') || '';
+    context.request.headers.get("sec-websocket-protocol") || "";
   let remoteSocket: TransformStream = null;
   webSocket.accept();
 
@@ -78,15 +72,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           addressRemote,
           rawDataIndex,
           vlessVersion,
-          isUDP,
+          isUDP
         } = processVlessHeader(chunk, userID);
-        address = addressRemote || '';
+        address = addressRemote || "";
         portWithRandomLog = `${portRemote}--${Math.random()} ${
-          isUDP ? 'udp ' : 'tcp '
+          isUDP ? "udp " : "tcp "
         } `;
         // if UDP but port not DNS port, close it
         if (isUDP && portRemote != 53) {
-          controller.error('UDP proxy only enable for DNS which is port 53');
+          controller.error("UDP proxy only enable for DNS which is port 53");
           webSocket.close(); // server close will not casuse worker throw error
           return;
         }
@@ -99,14 +93,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         const rawClientData = chunk.slice(rawDataIndex!);
         let queryip = "";
         if (addressType === 2) {
-          queryip = await dns(addressRemote);
-          if (queryip && isCloudFlareIP(queryip)) {
-            queryip = "192.203.230." + Math.floor(Math.random() * 255);
-          }
+          queryip = await cfDnsWrap(addressRemote);
         }
         remoteSocket = connect({
           hostname: queryip ? queryip : addressRemote,
-          port: portRemote,
+          port: portRemote
         });
         log(`connected`);
 
@@ -127,7 +118,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
           `[${address}:${portWithRandomLog}] readableWebSocketStream is abort`,
           JSON.stringify(reason)
         );
-      },
+      }
     })
   );
 
@@ -153,7 +144,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
               webSocket.send(chunk);
               // console.log(chunk.byteLength);
             } else {
-              controller.error('webSocket.readyState is not open, maybe close');
+              controller.error("webSocket.readyState is not open, maybe close");
             }
           },
           close() {
@@ -166,7 +157,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
               `[${address}:${portWithRandomLog}] remoteConnection!.readable abort`,
               reason
             );
-          },
+          }
         })
       )
       .catch((error) => {
@@ -180,7 +171,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   return new Response(null, {
     status: 101,
-    webSocket: client,
+    webSocket: client
   });
 };
 
@@ -190,7 +181,7 @@ function safeCloseWebSocket(ws: WebSocket) {
       ws.close();
     }
   } catch (error) {
-    console.error('safeCloseWebSocket error', error);
+    console.error("safeCloseWebSocket error", error);
   }
 }
 

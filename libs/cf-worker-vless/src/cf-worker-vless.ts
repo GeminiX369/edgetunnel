@@ -1,11 +1,6 @@
-import {
-  dns, isCloudFlareIP,
-  makeReadableWebSocketStream,
-  processVlessHeader,
-} from 'vless-js';
-import {connect} from 'cloudflare:sockets';
-import {Buffer} from 'node:buffer';
-import {validate} from 'uuid';
+import { cfDnsWrap, makeReadableWebSocketStream, processVlessHeader } from "vless-js";
+import { connect } from "cloudflare:sockets";
+import { validate } from "uuid";
 
 function delay(ms) {
   return new Promise((resolve, rej) => {
@@ -19,39 +14,36 @@ interface Env {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-    let address = '';
-    let portWithRandomLog = '';
-    const userID = env.UUID || '7f14e42a-f453-4c39-a762-019ee493237d';
-    const isVaildUUID = validate(userID);
+    let address = "";
+    let portWithRandomLog = "";
+    const userID = env.UUID || "7f14e42a-f453-4c39-a762-019ee493237d";
 
     const log = (info: string, event?: any) => {
-      console.log(`[${address}:${portWithRandomLog}] ${info}`, event || '');
+      console.log(`[${address}:${portWithRandomLog}] ${info}`, event || "");
     };
 
-    const upgradeHeader = request.headers.get('Upgrade');
-    if (!upgradeHeader || upgradeHeader !== 'websocket') {
-      return new Response(
-        `<html lang="en">
+    const upgradeHeader = request.headers.get("Upgrade");
+    if (!upgradeHeader || upgradeHeader !== "websocket") {
+      const isValidUUID = validate(userID);
+      return new Response(`<html lang="en">
 <head><title>404 Not Found</title></head>
 <body>
-<center><h1>404 Not Found ${isVaildUUID ? '_-_' : ''}</h1></center>
+<center><h1>404 Not Found ${isValidUUID ? "_-_" : ""}</h1></center>
 <hr><center>nginx/1.23.4</center>
 </body>
-</html>`,
-        {
-          status: 404,
-          headers: {
-            'content-type': 'text/html; charset=utf-8',
-            'WWW-Authenticate': 'Basic',
-          },
+</html>`, {
+        status: 404,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "WWW-Authenticate": "Basic"
         }
-      );
+      });
     }
 
     const webSocketPair = new WebSocketPair();
     const [client, webSocket] = Object.values(webSocketPair);
 
-    const earlyDataHeader = request.headers.get('sec-websocket-protocol') || '';
+    const earlyDataHeader = request.headers.get("sec-websocket-protocol") || "";
     let remoteSocket: TransformStream = null;
     webSocket.accept();
 
@@ -83,15 +75,15 @@ export default {
             addressRemote,
             rawDataIndex,
             vlessVersion,
-            isUDP,
+            isUDP
           } = processVlessHeader(chunk, userID);
-          address = addressRemote || '';
+          address = addressRemote || "";
           portWithRandomLog = `${portRemote}--${Math.random()} ${
-            isUDP ? 'udp ' : 'tcp '
+            isUDP ? "udp " : "tcp "
           } `;
           // if UDP but port not DNS port, close it
           if (isUDP && portRemote != 53) {
-            controller.error('UDP proxy only enable for DNS which is port 53');
+            controller.error("UDP proxy only enable for DNS which is port 53");
             webSocket.close(); // server close will not casuse worker throw error
             return;
           }
@@ -104,14 +96,11 @@ export default {
           const rawClientData = chunk.slice(rawDataIndex!);
           let queryIp = "";
           if (addressType === 2) {
-            queryIp = await dns(addressRemote);
-            if (queryIp && isCloudFlareIP(queryIp)) {
-              queryIp = "192.203.230." + Math.floor(Math.random() * 255);
-            }
+            queryIp = await cfDnsWrap(addressRemote);
           }
           remoteSocket = connect({
             hostname: queryIp ? queryIp : addressRemote,
-            port: portRemote,
+            port: portRemote
           });
           log(`connected`);
 
@@ -132,7 +121,7 @@ export default {
             `[${address}:${portWithRandomLog}] readableWebSocketStream is abort`,
             JSON.stringify(reason)
           );
-        },
+        }
       })
     );
 
@@ -159,7 +148,7 @@ export default {
                 // console.log(chunk.byteLength);
               } else {
                 controller.error(
-                  'webSocket.readyState is not open, maybe close'
+                  "webSocket.readyState is not open, maybe close"
                 );
               }
             },
@@ -173,7 +162,7 @@ export default {
                 `[${address}:${portWithRandomLog}] remoteConnection!.readable abort`,
                 reason
               );
-            },
+            }
           })
         )
         .catch((error) => {
@@ -187,9 +176,9 @@ export default {
 
     return new Response(null, {
       status: 101,
-      webSocket: client,
+      webSocket: client
     });
-  },
+  }
 };
 
 function safeCloseWebSocket(ws: WebSocket) {
@@ -198,6 +187,6 @@ function safeCloseWebSocket(ws: WebSocket) {
       ws.close();
     }
   } catch (error) {
-    console.error('safeCloseWebSocket error', error);
+    console.error("safeCloseWebSocket error", error);
   }
 }

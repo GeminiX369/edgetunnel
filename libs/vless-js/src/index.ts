@@ -4,6 +4,6 @@ export {
   safeCloseWebSocket as closeWebSocket,
   processVlessHeader,
   isCloudFlareIP,
-  dns,
+  cfDnsWrap,
   vlessJs,
 } from './lib/vless-js';

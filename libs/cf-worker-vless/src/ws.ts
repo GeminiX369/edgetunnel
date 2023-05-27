@@ -1,7 +1,7 @@
 export default {
   async fetch(request: Request) {
-    let address = '';
-    let portWithRandomLog = '';
+    const address = '';
+    const portWithRandomLog = '';
 
     const log = (info: string, event?: any) => {
       console.log(`[${address}:${portWithRandomLog}] ${info}`, event || '');

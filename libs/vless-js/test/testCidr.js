@@ -366,4 +366,4 @@ const cidrToRangeMask = (cidr) => {
   return [ipInt, ipMask];
 };
 
-cidrList.some((cidr) => console.log(cidrToRangeMask(cidr)));
+cidrList.forEach((cidr) => console.log(cidrToRangeMask(cidr)));

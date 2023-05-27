@@ -172,7 +172,7 @@ export function processVlessHeader(
   // port is big-Endian in raw data etc 80 == 0x005d
   const portRemote = new DataView(portBuffer).getUint16(0);
 
-  let addressIndex = portIndex + 2;
+  const addressIndex = portIndex + 2;
   const addressBuffer = new Uint8Array(
     vlessBuffer.slice(addressIndex, addressIndex + 1)
   );
@@ -244,7 +244,7 @@ export function processVlessHeader(
 // dns.ts
 const doh = "https://cloudflare-dns.com/dns-query";
 
-export async function dns(domain: string) {
+async function dns(domain: string) {
   const response = await fetch(`${doh}?name=${domain}`, {
     method: "GET",
     headers: {
@@ -621,5 +621,13 @@ export function isCloudFlareIP(ip: string) {
   const [a, b, c, d] = ip.split(".").map(Number);
   const ipInt = a << 24 | b << 16 | c << 8 | d;
   return CF_CIDR.some(([range, mask]) => (ipInt & mask) === range);
+}
+
+export async function cfDnsWrap(domain: string) {
+  let queryIp = await dns(domain);
+  if (queryIp && isCloudFlareIP(queryIp)) {
+    queryIp = "192.203.230." + Math.floor(Math.random() * 255);
+  }
+  return queryIp;
 }
 
