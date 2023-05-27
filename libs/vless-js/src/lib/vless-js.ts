@@ -617,14 +617,9 @@ const CF_CIDR = [
   [-954497536, -512]
 ];
 
-function isIp4InCidr(ipStr: string, cidr: number[]) {
-  const [a, b, c, d] = ipStr.split(".").map(Number);
-  const ipInt = a << 24 | b << 16 | c << 8 | d;
-  const [range, mask] = cidr;
-  return (ipInt & mask) === range;
-}
-
 export function isCloudFlareIP(ip: string) {
-  return CF_CIDR.some((cidr) => isIp4InCidr(ip, cidr));
+  const [a, b, c, d] = ip.split(".").map(Number);
+  const ipInt = a << 24 | b << 16 | c << 8 | d;
+  return CF_CIDR.some(([range, mask]) => (ipInt & mask) === range);
 }
 
